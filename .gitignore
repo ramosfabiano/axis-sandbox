@@ -1,0 +1,11 @@
+# Local, machine-specific overrides (this stack pins versions in the Dockerfile instead)
+.env
+.env.*
+!.env.example
+
+# Logs / editor / OS cruft
+*.log
+.DS_Store
+*.swp
+.idea/
+.vscode/

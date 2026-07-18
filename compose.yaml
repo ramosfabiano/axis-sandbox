@@ -1,0 +1,83 @@
+# Podman Compose - Axis + ForgeFX, hardened and offline by default.
+#
+#   podman compose up --build        (or:  podman-compose up --build)
+#   open http://127.0.0.1:5056
+#
+# Everything below is aimed at running third-party code with the least authority that still
+# lets the app work: rootless, no capabilities, no privilege escalation, read-only root
+# filesystem, loopback-only exposure, capped resources, and no route to the internet.
+
+services:
+  axis:
+    # Upstream refs are pinned as ARG defaults in the Dockerfile (the single source of truth).
+    # Bump them with `make update` (./update-refs.sh), then rebuild.
+    build:
+      context: .
+    image: axis-stack:local
+    container_name: axis-stack
+
+    # --- exposure: bind to loopback only, never 0.0.0.0 on the host ---
+    ports:
+      - "127.0.0.1:5056:5056"
+
+    # --- no internet: the app needs none (cloud/telemetry are off) ---
+    networks:
+      - isolated
+
+    # --- persistent, app-owned data (presets / backups / config) ---
+    volumes:
+      - axis-data:/data
+
+    # --- privilege + filesystem hardening ---
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+    # --- resource caps (honored by podman-compose; ignored gracefully otherwise) ---
+    mem_limit: 1g
+    memswap_limit: 1g
+    cpus: 2.0
+    pids_limit: 256
+
+    restart: "no"
+
+    # --- clean shutdown: run an init (catatonit) as PID 1 ------------------------------
+    # The server runs as `node dist/index.js`, i.e. PID 1 in the container. The kernel does
+    # NOT apply default signal handling to PID 1, and the app installs no SIGTERM handler, so
+    # `podman stop`'s SIGTERM is ignored -> 10s timeout -> SIGKILL (exit 137), and the abrupt
+    # kill is what trips the messy rootless netns teardown too. An init as PID 1 forwards the
+    # signal to node (and reaps zombies), so the container stops promptly and cleanly.
+    init: true
+
+    # --- hardware: control a real Fractal device (Axe-Fx III) --------------------------
+    # The Axe-Fx III talks USB-MIDI. ForgeFX (inside the container) does the MIDI I/O via
+    # ALSA, so the container needs the sound devices. /dev/snd always exists (onboard audio
+    # too), so this is safe to leave enabled. USB device access needs NO network, so the
+    # isolated/offline network above stays exactly as-is.
+    devices:
+      - "/dev/snd:/dev/snd"
+      # If your III/firmware ALSO exposes a USB-serial node and you'd rather use it, find it
+      # with `ls -l /dev/serial/by-id/` and add it here (the FM3 uses this path):
+      # - "/dev/ttyACM0:/dev/ttyACM0"
+    group_add:
+      # Rootless-safe device access: keep the HOST user's supplementary groups (audio, and
+      # dialout if you enable the serial node) inside the container, so the unprivileged
+      # 'node' process can open the device nodes without matching GIDs by hand.
+      # `keep-groups` is a Podman feature -> run this with podman-compose or `podman compose`
+      # (it is NOT understood by Docker). Your host user must be in the `audio` group.
+      - keep-groups
+
+networks:
+  isolated:
+    driver: bridge
+    # No gateway to the outside world. The published port above still serves the UI
+    # locally. If your podman version can't reach the UI with this on, delete the next
+    # line -- the app still stays offline because no cloud/telemetry env is set.
+    internal: true
+
+volumes:
+  axis-data:

@@ -4,7 +4,7 @@ Runs the [ForgeFX](https://github.com/sKuhLight/ForgeFX) engine serving the
 [Axis](https://github.com/sKuhLight/Axis) web UI as a single, locked-down container you use from
 your browser. Built entirely from pinned source; **offline by default**.
 
-This have been tested on Debian 13 (Trixie) host, with a Axe-FX III device.
+Tested on Debian 13 (Trixie) host, with a Axe-FX III device.
 
 ## Prerequisites
 

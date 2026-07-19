@@ -21,15 +21,12 @@ sudo usermod -aG audio "$USER"      # then log out + back in
 lsmod | grep -q snd_seq || sudo modprobe snd_seq
 ```
 
-Plug in the Axe-Fx III and **close Axe-Edit III / FractalBot / any DAW** that might be holding the
-MIDI port.
-
 ## Quick start
 
 The `Makefile` wraps the common commands:
 
 ```bash
-cd axis
+cd axis-sandbox
 make            # list all targets
 make start      # build + run detached (background)
 make open       # opens browser at http://127.0.0.1:5056
@@ -63,8 +60,6 @@ Data (presets/backups/config) persists in the `axis-data` volume across restarts
 | Offline app | no `SUPABASE_*`/`AXIS_CLOUD`/`AXIS_TELEMETRY` | Cloud sync + telemetry stay code-gated off |
 | Resource caps | `mem/cpus/pids` limits | Contains runaway/DoS behavior |
 
-The cloud and telemetry features are disabled.
-
 
 ### Run + verify
 
@@ -75,13 +70,13 @@ make verify     # should list an "Axe-Fx III MIDI In/Out" and show MIDI availabl
 
 `make verify` just curls `/ports` and `/diag` on the server for you. Then open
 <http://127.0.0.1:5056> (`make open`) and pick the device on the **Connection & Device** page (or let
-it auto-detect). Edits now drive the hardware.
+it auto-detect).
 
 ### If the device isn't detected
 
-- **`/ports` shows nothing / no MIDI (and `libasound2` is present):** the container can't reach ALSA.
+- **`/ports` shows nothing / no MIDI:** the container can't reach ALSA.
   Confirm `/dev/snd` exists, your host user is in `audio`, and you're launching with **podman**.
-- **Port is listed but won't open ("busy"):** another app holds it — quit Axe-Edit III / DAWs.
+- **Port is listed but won't open ("busy"):** another app holds it.
 
 ## Reset / cleanup
 
@@ -92,15 +87,8 @@ make reset      # also wipe the data volume (presets/backups/config) AND the bui
 
 ## Notes & caveats
 
-- First build is heavy (three `npm ci` + a Vite build). Subsequent `up` is instant.
-- Refs are pinned as `ARG` defaults in the `Dockerfile` — the single source of truth for the stack
-  version.
-- **Updating the stack:** `make update` (or `./update-refs.sh`) resolves the latest tag for each repo
-  via `git ls-remote` and rewrites the `ARG MIDI_REF/FORGEFX_REF/AXIS_REF` lines in the `Dockerfile`;
-  then `make build` to pull the new source. It does **not** build on its own — bumping refs pulls
-  unreviewed upstream code, so the rebuild stays a deliberate step.
-- If the UI is blank/unreachable on your Podman version with `internal: true`, delete that one line;
-  the app stays offline regardless (no cloud env is set).
+- **Updating the stack:** `make update` resolves the latest tag for each repo
+  via `git ls-remote` and rewrites the `ARG MIDI_REF/FORGEFX_REF/AXIS_REF` lines in the `Dockerfile`.
 - **`make stop`/`make down` prints `rootless netns: kill network process: permission denied`:** this
   is a **harmless** upstream Podman quirk when tearing down a rootless *bridge* network. The container
   still stops and the command returns success — you can ignore it. 

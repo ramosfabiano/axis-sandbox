@@ -14,7 +14,7 @@ This have been tested on Debian 13 (Trixie) host, with a Axe-FX III device.
 ## One-time host setup
 
 ```bash
-# 1) Your user must be in the 'audio' group (most desktops already are). If `groups` doesn't list 'audio':
+# 1) Your user must be in the 'audio' group (usually already are).
 sudo usermod -aG audio "$USER"      # then log out + back in
 
 # 2) The ALSA sequencer module must be loaded (usually automatic):

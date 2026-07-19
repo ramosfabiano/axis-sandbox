@@ -11,6 +11,19 @@ This have been tested on Debian 13 (Trixie) host, with a Axe-FX III device.
 - **rootless** podman (`podman info` should show `rootless: true`)
 - `podman compose` **or** `podman-compose`
 
+## One-time host setup
+
+```bash
+# 1) Your user must be in the 'audio' group (most desktops already are). If `groups` doesn't list 'audio':
+sudo usermod -aG audio "$USER"      # then log out + back in
+
+# 2) The ALSA sequencer module must be loaded (usually automatic):
+lsmod | grep -q snd_seq || sudo modprobe snd_seq
+```
+
+Plug in the Axe-Fx III and **close Axe-Edit III / FractalBot / any DAW** that might be holding the
+MIDI port.
+
 ## Quick start
 
 The `Makefile` wraps the common commands:
@@ -52,18 +65,6 @@ Data (presets/backups/config) persists in the `axis-data` volume across restarts
 
 The cloud and telemetry features are disabled.
 
-### One-time host setup
-
-```bash
-# 1) Your user must be in the 'audio' group (most desktops already are). If `groups` doesn't list 'audio':
-sudo usermod -aG audio "$USER"      # then log out + back in
-
-# 2) The ALSA sequencer module must be loaded (usually automatic):
-lsmod | grep -q snd_seq || sudo modprobe snd_seq
-```
-
-Plug in the Axe-Fx III and **close Axe-Edit III / FractalBot / any DAW** that might be holding the
-MIDI port.
 
 ### Run + verify
 
